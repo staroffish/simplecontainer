@@ -1,32 +1,133 @@
 package process
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
+// 容器进程
 func ContianerProcess(name string) {
+	var cInfo *ContainerInfo
 	sigCh := make(chan os.Signal)
 
-	signal.Notify(sigCh, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+	logrus.Info("start ContianerProcess")
 	for {
 		select {
 		case sig := <-sigCh:
 			if sig == syscall.SIGINT {
-				initProcess()
+				logrus.Info("Get SIGINT")
+				// 初始化容器进程
+				cInfo = ReadContainerInfo(name)
+				if cInfo == nil {
+					logrus.Errorf("ReadContainerInfo error")
+					os.Exit(-1)
+				}
+
+				// 切换rootfs 挂载proc文件系统
+				err := setUpMount()
+				if err != nil {
+					logrus.Errorf("setUpMount error")
+					os.Exit(-1)
+				}
+
+				// 更新容器状态
+				cInfo.Status = RUNNING
+				err = StoreContainerInfo(cInfo)
+				if err != nil {
+					logrus.Errorf("StoreContainerInfo error")
+					os.Exit(-1)
+				}
 			} else {
-				Cleanup(name)
-				os.Exit(-1)
+				logrus.Infof("get other signal %s", sig.String())
+				//更新容器状态
+				cInfo.Status = STOP
+				err := StoreContainerInfo(cInfo)
+				if err != nil {
+					logrus.Errorf("StoreContainerInfo error")
+				}
+				os.Exit(0)
 			}
 		}
 	}
 }
 
-func initProcess() {
+// 切换rootfs 挂载proc文件系统
+func setUpMount() error {
+	pwd, err := os.Getwd()
+	if err != nil {
+		logrus.Errorf("Get current location error %v", err)
+		return err
+	}
 
+	logrus.Infof("Current location is %s", pwd)
+
+	// 将根目录的挂载flag设成PRIVATE
+	err = syscall.Mount("", "/", "", uintptr(syscall.MS_PRIVATE|syscall.MS_REC), "")
+	if err != nil {
+		logrus.Errorf(err.Error())
+		return err
+	}
+
+	// 切换rootfs
+	err = pivotRoot(pwd)
+	if err != nil {
+		logrus.Errorf("pivotRoot error %v", err)
+		return err
+	}
+
+	// 挂载proc文件系统
+	defaultMountFlags := syscall.MS_NOEXEC | syscall.MS_NOSUID | syscall.MS_NODEV
+	err = syscall.Mount("proc", "/proc", "proc", uintptr(defaultMountFlags), "")
+	if err != nil {
+		logrus.Errorf(err.Error())
+		return err
+	}
+
+	// 挂载tmpfs
+	err = syscall.Mount("tmpfs", "/dev", "tmpfs", syscall.MS_NOSUID|syscall.MS_STRICTATIME, "mode=755")
+	if err != nil {
+		logrus.Errorf(err.Error())
+		return err
+	}
+	return nil
 }
 
-func Cleanup(name string) {
+// 切换rootfs
+func pivotRoot(root string) error {
+	// 由于pivot_root不能切换到自己分区里的目录,所以先将root bind一下
+	if err := syscall.Mount(root, root, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil {
+		return fmt.Errorf("Mount rootfs to itself error:%v", err)
+	}
 
+	pivotDir := filepath.Join(root, ".pivot_root")
+	if err := os.Mkdir(pivotDir, 0777); err != nil && !os.IsExist(err) {
+		return err
+	}
+	logrus.Infof("pivotDir=%s", pivotDir)
+
+	// 切换rootfs
+	if err := syscall.PivotRoot(root, pivotDir); err != nil {
+		return fmt.Errorf("PivotRoot error:%v", err)
+	}
+	logrus.Infof("PivotRoot ok root=%s", root)
+
+	// 将当前目录切换到 /
+	if err := syscall.Chdir("/"); err != nil {
+		return fmt.Errorf("Chdir /:%v", err)
+	}
+
+	pivotDir = "/.pivot_root"
+
+	// 卸载原有rootfs
+	if err := syscall.Unmount(pivotDir, syscall.MNT_DETACH); err != nil {
+		return fmt.Errorf("umount /.pivot_root :%v", err)
+	}
+
+	return os.Remove(pivotDir)
 }

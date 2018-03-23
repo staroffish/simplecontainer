@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
+	"mntfs"
 	"process"
 	"syscall"
 	"time"
@@ -14,14 +12,25 @@ import (
 
 func Run(name, imageName string) (err error) {
 	err = nil
+	// 创建容器进程的命令
+	cmd, err := process.NewParentProcess(&name, imageName)
+	if err != nil {
+		return
+	}
+
 	cInfo := &process.ContainerInfo{}
 	cInfo.Name = name
 	cInfo.ImageName = imageName
 
-	// 创建容器进程的命令
-	cmd, err := process.NewParentProcess(name, imageName)
-	if err != nil {
-		return
+	// 挂载容器目录
+	mntFs := mntfs.GetMountInst("overlay")
+
+	if err := mntFs.InitMnt(name, imageName); err != nil {
+		return err
+	}
+
+	if err := mntFs.Mount(); err != nil {
+		return err
 	}
 
 	// 启动容器进程
@@ -33,7 +42,7 @@ func Run(name, imageName string) (err error) {
 	defer func() {
 		if err != nil {
 			cmd.Process.Kill()
-			process.Cleanup(name)
+			mntFs.Unmount()
 		}
 	}()
 
@@ -44,11 +53,12 @@ func Run(name, imageName string) (err error) {
 
 	// 保存容器设定
 	cInfo.CreateTime = time.Now().Format("2006-01-02 15:04:05")
-	err = StoreContainerInfo(cInfo)
+	err = process.StoreContainerInfo(cInfo)
 	if err != nil {
 		return
 	}
 
+	time.Sleep(5 * time.Second)
 	// 给容器发送Cgroup和网络设定完成的信号
 	err = cmd.Process.Signal(syscall.SIGINT)
 	if err != nil {
@@ -56,31 +66,7 @@ func Run(name, imageName string) (err error) {
 		return
 	}
 
+	cmd.Wait()
+	mntFs.Unmount()
 	return
-}
-
-// 保存容器信息
-func StoreContainerInfo(cInfo *process.ContainerInfo) error {
-	// 序列化容器信息
-	jstr, err := json.Marshal(cInfo)
-	if err != nil {
-		logrus.Errorf("marshal container info error:%v", err)
-		return err
-	}
-
-	// 创建容器信息目录
-	confDir := fmt.Sprintf(process.InfoLocation, cInfo.Name)
-	if err := os.MkdirAll(confDir, 0755); err != nil {
-		logrus.Errorf("make container info dir error:%s:%v", confDir, err)
-		return err
-	}
-
-	// 写入容器信息
-	confPath := fmt.Sprintf("%s/%s", confDir, process.ConfigName)
-	if err := ioutil.WriteFile(confPath, jstr, 0644); err != nil {
-		logrus.Errorf("OpenFile container info file error:%s:%v", confPath, err)
-		return err
-	}
-
-	return nil
 }
