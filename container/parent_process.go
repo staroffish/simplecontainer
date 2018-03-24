@@ -1,13 +1,13 @@
 package process
 
 import (
-	"config"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"os/exec"
+	"staroffish/simplecontainer/config"
 	"syscall"
 	"time"
 
@@ -25,6 +25,7 @@ type ContainerInfo struct {
 }
 
 var (
+	STARTING   = "starting"
 	RUNNING    = "running"
 	STOP       = "stopped"
 	EXIT       = "exited"
@@ -76,6 +77,8 @@ func StoreContainerInfo(cInfo *ContainerInfo) error {
 
 	// 写入容器信息
 	confPath := fmt.Sprintf("%s/%s", confDir, ConfigName)
+	logrus.Debug(confPath)
+	logrus.Debug(string(jstr))
 	if err := ioutil.WriteFile(confPath, jstr, 0644); err != nil {
 		logrus.Errorf("Write container info to file error:%s:%v", confPath, err)
 		return err
@@ -103,4 +106,10 @@ func ReadContainerInfo(name string) *ContainerInfo {
 	}
 
 	return cInfo
+}
+
+// 删除容器信息
+func RemoveContainerInfo(name string) error {
+	confPath := fmt.Sprintf("%s/%s", config.CInfopath, name)
+	return os.RemoveAll(confPath)
 }

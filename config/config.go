@@ -14,6 +14,7 @@ var (
 	ImagePath    string
 	LogPath      string
 	CInfopath    string
+	LogLevel     string
 )
 
 func init() {
@@ -24,14 +25,12 @@ func init() {
 		ImagePath    string `json:"imagepath"`
 		LogPath      string `json:"logpath"`
 		CInfopath    string `json:"cInfopath"`
+		LogLevel     string `json:"loglevel"`
 	}{}
 	data, err := ioutil.ReadFile("/etc/sc.json")
 	if err != nil {
-		data, err = ioutil.ReadFile("./sc.json")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Open config file error.\nThe configuration file sc.json must exist with /etc or the current directory.\n")
-			os.Exit(-1)
-		}
+		fmt.Fprintf(os.Stderr, "Open config file error.\nThe configuration file sc.json must exist with /etc.\n")
+		os.Exit(-1)
 	}
 
 	if err = json.Unmarshal(data, &scCfg); err != nil {
@@ -39,7 +38,8 @@ func init() {
 		os.Exit(-1)
 	}
 
-	if scCfg.ImagePath == "" || scCfg.LogPath == "" || scCfg.WirtelayPath == "" || scCfg.MntPath == "" || scCfg.CInfopath == "" {
+	if scCfg.ImagePath == "" || scCfg.LogPath == "" || scCfg.WirtelayPath == "" ||
+		scCfg.MntPath == "" || scCfg.CInfopath == "" {
 		fmt.Fprintf(os.Stderr, "Config file load error.\n")
 		os.Exit(-1)
 	}
@@ -68,4 +68,8 @@ func init() {
 		scCfg.CInfopath = scCfg.CInfopath + "/"
 	}
 	CInfopath = scCfg.CInfopath
+
+	if scCfg.LogLevel != "" {
+		LogLevel = scCfg.LogLevel
+	}
 }

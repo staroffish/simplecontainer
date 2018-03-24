@@ -1,10 +1,10 @@
 package overlay
 
 import (
-	"config"
 	"fmt"
-	"mntfs"
 	"os"
+	"staroffish/simplecontainer/config"
+	"staroffish/simplecontainer/mntfs"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
@@ -12,23 +12,16 @@ import (
 
 type overlay struct{}
 
-var (
-	upperPath string // up层路径
-	lowerPath string // lower层路径
-	mergePath string // 挂载路径
-	workPath  string // work层路径
-)
-
 func init() {
-	mntfs.SetMntInst("overlay", &overlay{})
+	mntfs.SetMntInst(mntfs.OVERLAY, &overlay{})
 }
 
 func (o *overlay) InitMnt(name, imageName string) error {
-	lowerPath = fmt.Sprintf("%s/%s/", config.ImagePath, imageName)
-	mergePath = fmt.Sprintf("%s/%s/", config.MntPath, name)
+	lowerPath := fmt.Sprintf("%s/%s/", config.ImagePath, imageName)
+	mergePath := fmt.Sprintf("%s/%s/", config.MntPath, name)
 	writePath := fmt.Sprintf("%s/%s", config.WirtelayPath, name)
-	upperPath = fmt.Sprintf("%s/%s/", writePath, "upper")
-	workPath = fmt.Sprintf("%s/%s/", writePath, "work")
+	upperPath := fmt.Sprintf("%s/%s/", writePath, "upper")
+	workPath := fmt.Sprintf("%s/%s/", writePath, "work")
 
 	// 确认镜像目录是否存在
 	_, err := os.Stat(lowerPath)
@@ -80,7 +73,12 @@ func (o *overlay) InitMnt(name, imageName string) error {
 	return nil
 }
 
-func (o *overlay) Mount() error {
+func (o *overlay) Mount(name, imageName string) error {
+	lowerPath := fmt.Sprintf("%s/%s/", config.ImagePath, imageName)
+	mergePath := fmt.Sprintf("%s/%s/", config.MntPath, name)
+	writePath := fmt.Sprintf("%s/%s", config.WirtelayPath, name)
+	upperPath := fmt.Sprintf("%s/%s/", writePath, "upper")
+	workPath := fmt.Sprintf("%s/%s/", writePath, "work")
 
 	// mount -t overlay overlay -olowerdir=./lower,upperdir=./upper,workdir=./work ./merged
 	optStr := fmt.Sprintf("lowerdir=%s,upperdir=%s,workdir=%s", lowerPath, upperPath, workPath)
@@ -92,12 +90,30 @@ func (o *overlay) Mount() error {
 	return nil
 }
 
-func (o *overlay) Unmount() error {
+func (o *overlay) Unmount(name string) error {
+	mergePath := fmt.Sprintf("%s%s", config.MntPath, name)
 
 	err := syscall.Unmount(mergePath, 0)
 	if err != nil {
-		logrus.Errorf("Unmount overlay file system error:%v", err)
+		logrus.Errorf("Unmount overlay file system error:%s:%v", mergePath, err)
 		return err
 	}
+	return nil
+}
+
+func (o *overlay) Remove(name string) error {
+	mergePath := fmt.Sprintf("%s/%s", config.MntPath, name)
+	writePath := fmt.Sprintf("%s/%s", config.WirtelayPath, name)
+
+	if err := os.RemoveAll(mergePath); err != nil {
+		logrus.Errorf("Remove %s error:%v", mergePath, err)
+		return fmt.Errorf("Remove %s error:%v", mergePath, err)
+	}
+
+	if err := os.RemoveAll(writePath); err != nil {
+		logrus.Errorf("Remove %s error:%v", writePath, err)
+		return fmt.Errorf("Remove %s error:%v", writePath, err)
+	}
+
 	return nil
 }

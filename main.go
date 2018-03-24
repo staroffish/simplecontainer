@@ -1,12 +1,12 @@
 package main
 
 import (
-	"config"
 	"fmt"
 	"log"
 	"os"
+	"staroffish/simplecontainer/config"
 
-	_ "mntfs/overlay"
+	_ "staroffish/simplecontainer/mntfs/overlay"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -14,9 +14,11 @@ import (
 
 func main() {
 	app := cli.NewApp()
-	app.Name = "sc"
+	app.Name = "simplecontainer"
 	app.Usage = "A very simple container runtime implatemention."
-	app.Commands = []cli.Command{runCommand, initCommand}
+	app.Commands = []cli.Command{runCommand, initCommand,
+		execCommand, startCommand, stopCommand,
+		rmCommand, psCommand, imageCommand}
 	app.Version = "0.0.1"
 
 	app.Before = func(ctx *cli.Context) error {
@@ -26,6 +28,11 @@ func main() {
 			fmt.Printf("Error to open ./sc.log:%v\n", err)
 			os.Exit(-1)
 		}
+		lvl, err := logrus.ParseLevel(config.LogLevel)
+		if err != nil {
+			lvl = logrus.InfoLevel
+		}
+		logrus.SetLevel(lvl)
 		logrus.SetOutput(file)
 		return nil
 	}

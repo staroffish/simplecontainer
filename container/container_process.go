@@ -17,43 +17,36 @@ func ContianerProcess(name string) {
 
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	logrus.Info("start ContianerProcess")
-	for {
-		select {
-		case sig := <-sigCh:
-			if sig == syscall.SIGINT {
-				logrus.Info("Get SIGINT")
-				// 初始化容器进程
-				cInfo = ReadContainerInfo(name)
-				if cInfo == nil {
-					logrus.Errorf("ReadContainerInfo error")
-					os.Exit(-1)
-				}
-
-				// 切换rootfs 挂载proc文件系统
-				err := setUpMount()
-				if err != nil {
-					logrus.Errorf("setUpMount error")
-					os.Exit(-1)
-				}
-
-				// 更新容器状态
-				cInfo.Status = RUNNING
-				err = StoreContainerInfo(cInfo)
-				if err != nil {
-					logrus.Errorf("StoreContainerInfo error")
-					os.Exit(-1)
-				}
-			} else {
-				logrus.Infof("get other signal %s", sig.String())
-				//更新容器状态
-				cInfo.Status = STOP
-				err := StoreContainerInfo(cInfo)
-				if err != nil {
-					logrus.Errorf("StoreContainerInfo error")
-				}
-				os.Exit(0)
+	select {
+	case sig := <-sigCh:
+		if sig == syscall.SIGINT {
+			logrus.Info("Get SIGINT")
+			// 初始化容器进程
+			cInfo = ReadContainerInfo(name)
+			if cInfo == nil {
+				logrus.Errorf("ReadContainerInfo error")
+				os.Exit(-1)
 			}
+
+			// 切换rootfs 挂载proc文件系统
+			err := setUpMount()
+			if err != nil {
+				logrus.Errorf("setUpMount error")
+				os.Exit(-1)
+			}
+			signal.Reset(syscall.SIGINT)
+		} else {
+			logrus.Infof("get signal %s", sig.String())
+
+			os.Exit(0)
 		}
+	}
+
+	select {
+	case sig := <-sigCh:
+		logrus.Infof("get signal %s", sig.String())
+
+		os.Exit(0)
 	}
 }
 
