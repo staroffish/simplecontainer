@@ -203,20 +203,28 @@ var imageCommand = cli.Command{
 		cli.Command{
 			Name: "import",
 			Usage: `Import image from a tar file that compressed into gzip
-			simplecontainer image import file_name`,
+			simplecontainer image import -name imagName file_name`,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "name",
+					Usage: "image name",
+				},
+			},
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
 					logrus.Errorf("missing file_name")
 					return fmt.Errorf("missing file_name")
 				}
 
-				return importImage(ctx.Args().Get(0))
+				imageName := ctx.String("name")
+
+				return importImage(ctx.Args().Get(0), imageName)
 			},
 		},
 		cli.Command{
 			Name: "export",
 			Usage: `Export image to a tar file that compressed into gzip
-			simplecontainer image import image_name dst_path`,
+			simplecontainer image export image_name dst_path`,
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 2 {
 					logrus.Errorf("missing image_name or dst_path")

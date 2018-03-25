@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
+	"strings"
 
 	"github.com/staroffish/simplecontainer/config"
 	container "github.com/staroffish/simplecontainer/container"
@@ -62,9 +64,27 @@ func imageList() error {
 	return nil
 }
 
-func importImage(gzFile string) error {
+func importImage(gzFile, name string) error {
 
-	if _, err := exec.Command("tar", "-xzvf", gzFile, "-C", config.ImagePath).CombinedOutput(); err != nil {
+	if name == "" {
+		fileName := path.Base(gzFile)
+		name = strings.Split(fileName, ".")[0]
+	}
+
+	importPath := fmt.Sprintf("%s/%s", config.ImagePath, name)
+
+	_, err := os.Stat(importPath)
+	if !os.IsNotExist(err) {
+		logrus.Errorf("Image %s already exists", name)
+		return fmt.Errorf("Image %s already exists", name)
+	}
+
+	if err := os.MkdirAll(importPath, 0755); err != nil {
+		logrus.Errorf("Mk image path %s error %v", importPath, err)
+		return fmt.Errorf("Mk image path %s error %v", importPath, err)
+	}
+
+	if _, err := exec.Command("tar", "-xzvf", gzFile, "-C", importPath).CombinedOutput(); err != nil {
 		logrus.Errorf("unTar file %s error %v", gzFile, err)
 		return fmt.Errorf("unTar file %s error %v", gzFile, err)
 	}
@@ -73,13 +93,14 @@ func importImage(gzFile string) error {
 }
 
 func exportImage(imageName, gzPath string) error {
-	//取得镜像信息
+	//确认镜像存在
 	if err := checkImageExists(imageName); err != nil {
 		return err
 	}
 
 	gzFile := fmt.Sprintf("%s/%s.tgz", gzPath, imageName)
-	output, err := exec.Command("tar", "-C", config.ImagePath, "-czvf", gzFile, imageName).CombinedOutput()
+	basePath := fmt.Sprintf("%s/%s", config.ImagePath, imageName)
+	output, err := exec.Command("tar", "-C", basePath, "-czvf", gzFile, ".").CombinedOutput()
 	if err != nil {
 		logrus.Errorf("Compress file %s error %s", gzFile, output)
 		return fmt.Errorf("Compress file %s error %s", gzFile, output)
