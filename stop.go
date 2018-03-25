@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	container "staroffish/simplecontainer/container"
-	"staroffish/simplecontainer/mntfs"
 	"strconv"
 	"syscall"
+
+	container "github.com/staroffish/simplecontainer/container"
+	"github.com/staroffish/simplecontainer/mntfs"
 )
 
 func stop(name string) error {
@@ -16,17 +17,18 @@ func stop(name string) error {
 	}
 
 	// 检查容器状态
-	if cInfo.Status != container.RUNNING {
+	if cInfo.Status != container.RUNNING && cInfo.Status != container.STARTING {
 		return fmt.Errorf("Container %s already stopped", name)
 	}
 
-	pid, err := strconv.Atoi(cInfo.Pid)
-	if err != nil {
-		return fmt.Errorf("Pid error in container configuration")
+	if cInfo.Status != container.STARTING {
+		pid, err := strconv.Atoi(cInfo.Pid)
+		if err != nil {
+			return fmt.Errorf("Pid error in container configuration")
+		}
+		// 停止容器
+		syscall.Kill(pid, syscall.SIGTERM)
 	}
-
-	// 停止容器
-	syscall.Kill(pid, syscall.SIGTERM)
 	mntFs := mntfs.GetMountInst(mntfs.OVERLAY)
 	mntFs.Unmount(cInfo.Name)
 	cInfo.Status = container.STOP

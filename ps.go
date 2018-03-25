@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"staroffish/simplecontainer/config"
-	container "staroffish/simplecontainer/container"
 	"text/tabwriter"
+
+	"github.com/staroffish/simplecontainer/config"
+	container "github.com/staroffish/simplecontainer/container"
 
 	"github.com/sirupsen/logrus"
 )

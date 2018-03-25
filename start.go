@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	container "staroffish/simplecontainer/container"
+
+	container "github.com/staroffish/simplecontainer/container"
 )
 
 func start(name string) error {

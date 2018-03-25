@@ -1,4 +1,4 @@
-package process
+package container
 
 import (
 	"encoding/json"
@@ -7,21 +7,27 @@ import (
 	"math/rand"
 	"os"
 	"os/exec"
-	"staroffish/simplecontainer/config"
 	"syscall"
 	"time"
+
+	"github.com/staroffish/simplecontainer/config"
 
 	"github.com/sirupsen/logrus"
 )
 
 type ContainerInfo struct {
-	Pid        string `json:"pid"`
-	Name       string `json:"name"`
-	CreateTime string `json:"createTime"`
-	Status     string `json:"status"`
-	ImageName  string `json:"imagename"`
-	MemLimit   string `json:memlimit`
-	Cpu        string `json:cpu`
+	Pid           string `json:"pid"`
+	Name          string `json:"name"`
+	CreateTime    string `json:"createTime"`
+	Status        string `json:"status"`
+	ImageName     string `json:"imagename"`
+	MemLimit      string `json:"memlimit"`
+	CPU           string `json:"cpu"`
+	NetType       string `json:"nettype"`
+	Subnet        string `json:"subnet"`
+	ParentNetwork string `json:"parentnetwork"`
+	NetDeviceName string `json:"devicename"`
+	Gateway       string `json:"gateway"`
 }
 
 var (
@@ -35,7 +41,7 @@ var (
 // 启动容器父进程
 func NewParentProcess(name *string, imageName string) (*exec.Cmd, error) {
 	if *name == "" {
-		*name = randStringBytes(16)
+		*name = RandStringBytes(16)
 	}
 	cmd := exec.Command("/proc/self/exe", "init", *name)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -48,7 +54,7 @@ func NewParentProcess(name *string, imageName string) (*exec.Cmd, error) {
 	return cmd, nil
 }
 
-func randStringBytes(n int) string {
+func RandStringBytes(n int) string {
 	letterBytes := "1234567890"
 	rand.Seed(time.Now().UnixNano())
 	b := make([]byte, n)

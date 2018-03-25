@@ -3,9 +3,10 @@ package overlay
 import (
 	"fmt"
 	"os"
-	"staroffish/simplecontainer/config"
-	"staroffish/simplecontainer/mntfs"
 	"syscall"
+
+	"github.com/staroffish/simplecontainer/config"
+	"github.com/staroffish/simplecontainer/mntfs"
 
 	"github.com/sirupsen/logrus"
 )

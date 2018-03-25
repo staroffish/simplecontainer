@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"staroffish/simplecontainer/config"
 
-	_ "staroffish/simplecontainer/mntfs/overlay"
+	"github.com/staroffish/simplecontainer/config"
+
+	_ "github.com/staroffish/simplecontainer/mntfs/overlay"
+	_ "github.com/staroffish/simplecontainer/network/macvlan"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"

@@ -1,8 +1,9 @@
-package process
+package container
 
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"syscall"
@@ -26,6 +27,15 @@ func ContianerProcess(name string) {
 			if cInfo == nil {
 				logrus.Errorf("ReadContainerInfo error")
 				os.Exit(-1)
+			}
+
+			if cInfo.NetType == "dhcp" {
+				// 获取DHCP
+				cmd := exec.Command("/sbin/dhclient")
+				output, err := cmd.CombinedOutput()
+				if err != nil {
+					logrus.Errorf("Execute dhcp cmd error %s:%v", output, err)
+				}
 			}
 
 			// 切换rootfs 挂载proc文件系统

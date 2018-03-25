@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	container "staroffish/simplecontainer/container"
-	"staroffish/simplecontainer/mntfs"
+
+	container "github.com/staroffish/simplecontainer/container"
+	"github.com/staroffish/simplecontainer/mntfs"
 )
 
 func remove(name string) error {

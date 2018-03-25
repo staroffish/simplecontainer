@@ -5,10 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	container "staroffish/simplecontainer/container"
 	"strings"
 
-	_ "staroffish/simplecontainer/nsenter"
+	container "github.com/staroffish/simplecontainer/container"
+
+	_ "github.com/staroffish/simplecontainer/nsenter"
 
 	"github.com/sirupsen/logrus"
 )

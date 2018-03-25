@@ -3,7 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
-	container "staroffish/simplecontainer/container"
+
+	container "github.com/staroffish/simplecontainer/container"
 
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -12,11 +13,27 @@ import (
 var runCommand = cli.Command{
 	Name: "run",
 	Usage: `Create a new container
-	simplecontainer run [-m memroy_limit(mega)] [-cpu core_num] [-name container_name] imagename`,
+	simplecontainer run [-m memroy_limit(mega)] [-cpu core_num] [-name container_name] [-net dhcp|static -ip ip -parent parent_dev -gateway gateway_ip] imagename`,
 	Flags: []cli.Flag{
 		cli.StringFlag{
 			Name:  "name",
 			Usage: "container name",
+		},
+		cli.StringFlag{
+			Name:  "net",
+			Usage: `container network setting`,
+		},
+		cli.StringFlag{
+			Name:  "ip",
+			Usage: `container ip address`,
+		},
+		cli.StringFlag{
+			Name:  "parent",
+			Usage: `parent device for macvlan`,
+		},
+		cli.StringFlag{
+			Name:  "gateway",
+			Usage: `container gateway ip`,
 		},
 	},
 	Action: func(ctx *cli.Context) error {
@@ -27,6 +44,28 @@ var runCommand = cli.Command{
 		cInfo := &container.ContainerInfo{
 			Name:      ctx.String("name"),
 			ImageName: ctx.Args().Get(0),
+		}
+
+		cInfo.NetType = ctx.String("net")
+		if cInfo.NetType != "" {
+			if cInfo.NetType != "dhcp" && cInfo.NetType != "static" {
+				return fmt.Errorf("net option must be dhcp or static")
+			}
+			cInfo.ParentNetwork = ctx.String("parent")
+			if cInfo.ParentNetwork == "" {
+				return fmt.Errorf("missing parent device name")
+			}
+			if cInfo.NetType == "static" {
+				cInfo.Subnet = ctx.String("ip")
+				if cInfo.Subnet == "" {
+					return fmt.Errorf("Static network must specify IP")
+				}
+				cInfo.Gateway = ctx.String("gateway")
+				if cInfo.Gateway == "" {
+					return fmt.Errorf("missing Gateway")
+				}
+			}
+
 		}
 
 		return run(cInfo)
