@@ -1,0 +1,8 @@
+{
+"mntpath":"/root/container/mnt",
+"writelaypath":"/root/container/writelayer",
+"imagepath":"/root/container/images",
+"logpath":"/root/container/log",
+"cInfopath":"/root/container/containerInfo",
+"loglevel":"debug"
+}
