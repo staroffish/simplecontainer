@@ -5,6 +5,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/staroffish/simplecontainer/cgroups"
 	container "github.com/staroffish/simplecontainer/container"
 	"github.com/staroffish/simplecontainer/mntfs"
 	"github.com/staroffish/simplecontainer/network"
@@ -60,12 +61,30 @@ func startContainer(cInfo *container.ContainerInfo) (err error) {
 			cInfo.Status = container.STOP
 			cInfo.Pid = ""
 			container.StoreContainerInfo(cInfo)
+			if len(cInfo.CPU) != 0 {
+				cgroups.UnsetCPULimit(cInfo.Name)
+			}
+			if len(cInfo.MemLimit) != 0 {
+				cgroups.UnsetMemroyLimit(cInfo.Name)
+			}
 		}
 	}()
 
 	cInfo.Pid = fmt.Sprintf("%d", cmd.Process.Pid)
 
 	// Cgroup设定
+	if len(cInfo.MemLimit) != 0 {
+		if err = cgroups.SetMemroyLimit(cInfo.Name, cInfo.MemLimit, cInfo.Pid); err != nil {
+			logrus.Errorf("Set Memroy Limit error")
+			return
+		}
+	}
+	if len(cInfo.CPU) != 0 {
+		if err = cgroups.SetCPULimit(cInfo.Name, cInfo.CPU, cInfo.Pid); err != nil {
+			logrus.Errorf("Set CPU Limit error")
+			return
+		}
+	}
 
 	// 网络设定
 	if cInfo.NetType != "" {

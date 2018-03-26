@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/staroffish/simplecontainer/cgroups"
 	container "github.com/staroffish/simplecontainer/container"
 
 	_ "github.com/staroffish/simplecontainer/nsenter"
@@ -38,9 +39,27 @@ func execCmd(containerName, command string) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stderr = os.Stderr
 
-	if err = cmd.Run(); err != nil {
+	if err = cmd.Start(); err != nil {
 		return fmt.Errorf("Exec command error:%s:%v", command, err)
 	}
+
+	pid := fmt.Sprintf("%d", cmd.Process.Pid)
+
+	// Cgroup设定
+	if len(cInfo.MemLimit) != 0 {
+		if err = cgroups.SetMemroyLimit(cInfo.Name, cInfo.MemLimit, pid); err != nil {
+			logrus.Errorf("Set Memroy Limit error")
+			return err
+		}
+	}
+	if len(cInfo.CPU) != 0 {
+		if err = cgroups.SetCPULimit(cInfo.Name, cInfo.CPU, pid); err != nil {
+			logrus.Errorf("Set CPU Limit error")
+			return err
+		}
+	}
+
+	cmd.Wait()
 
 	return nil
 }

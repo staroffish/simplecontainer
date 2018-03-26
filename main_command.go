@@ -35,6 +35,14 @@ var runCommand = cli.Command{
 			Name:  "gateway",
 			Usage: `container gateway ip`,
 		},
+		cli.StringFlag{
+			Name:  "cpu",
+			Usage: `cpu limit`,
+		},
+		cli.StringFlag{
+			Name:  "m",
+			Usage: `memroy limit in megabytes`,
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		if len(ctx.Args()) < 1 {
@@ -67,6 +75,9 @@ var runCommand = cli.Command{
 			}
 
 		}
+
+		cInfo.CPU = ctx.String("cpu")
+		cInfo.MemLimit = ctx.String("m")
 
 		return run(cInfo)
 	},
