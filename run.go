@@ -37,7 +37,17 @@ func startContainer(cInfo *container.ContainerInfo) (err error) {
 	}
 
 	// 挂载容器目录
-	mntFs := mntfs.GetMountInst(mntfs.OVERLAY)
+	if len(cInfo.FileSystem) == 0 {
+		fs := mntfs.GetSupportedFs()
+		if len(fs) == 0 {
+			err = fmt.Errorf("Must support %q file systems.", mntfs.SupportedFileSystem)
+			logrus.Errorf("start command error:%v", err)
+			return
+		}
+		cInfo.FileSystem = fs
+	}
+
+	mntFs := mntfs.GetMountInst(cInfo.FileSystem)
 
 	if err := mntFs.InitMnt(cInfo.Name, cInfo.ImageName); err != nil {
 		return err

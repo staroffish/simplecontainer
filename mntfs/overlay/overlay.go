@@ -92,29 +92,9 @@ func (o *overlay) Mount(name, imageName string) error {
 }
 
 func (o *overlay) Unmount(name string) error {
-	mergePath := fmt.Sprintf("%s%s", config.MntPath, name)
-
-	err := syscall.Unmount(mergePath, 0)
-	if err != nil {
-		logrus.Errorf("Unmount overlay file system error:%s:%v", mergePath, err)
-		return err
-	}
-	return nil
+	return mntfs.Unmount(name)
 }
 
 func (o *overlay) Remove(name string) error {
-	mergePath := fmt.Sprintf("%s/%s", config.MntPath, name)
-	writePath := fmt.Sprintf("%s/%s", config.WirtelayPath, name)
-
-	if err := os.RemoveAll(mergePath); err != nil {
-		logrus.Errorf("Remove %s error:%v", mergePath, err)
-		return fmt.Errorf("Remove %s error:%v", mergePath, err)
-	}
-
-	if err := os.RemoveAll(writePath); err != nil {
-		logrus.Errorf("Remove %s error:%v", writePath, err)
-		return fmt.Errorf("Remove %s error:%v", writePath, err)
-	}
-
-	return nil
+	return mntfs.Remove(name)
 }

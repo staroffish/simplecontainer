@@ -28,6 +28,7 @@ type ContainerInfo struct {
 	ParentNetwork string `json:"parentnetwork"`
 	NetDeviceName string `json:"devicename"`
 	Gateway       string `json:"gateway"`
+	FileSystem    string `json:"filesystem"`
 }
 
 var (

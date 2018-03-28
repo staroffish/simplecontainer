@@ -7,6 +7,7 @@ import (
 
 	"github.com/staroffish/simplecontainer/config"
 
+	_ "github.com/staroffish/simplecontainer/mntfs/aufs"
 	_ "github.com/staroffish/simplecontainer/mntfs/overlay"
 	_ "github.com/staroffish/simplecontainer/network/macvlan"
 
