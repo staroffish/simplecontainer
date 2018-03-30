@@ -63,7 +63,7 @@ func (m *macvlan) SetupNetwork(cInfo *container.ContainerInfo) error {
 	la.ParentIndex = parent.Attrs().Index
 
 	// 添加网络接口
-	mac := &netlink.Macvlan{LinkAttrs: la, Mode: netlink.MACVLAN_MODE_DEFAULT}
+	mac := &netlink.Macvlan{LinkAttrs: la, Mode: netlink.MACVLAN_MODE_BRIDGE}
 	if err := netlink.LinkAdd(mac); err != nil {
 		logrus.Errorf("Add link error:%v", err)
 		return fmt.Errorf("Add link error:%v", err)

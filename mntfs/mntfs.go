@@ -26,7 +26,7 @@ const (
 	AUFS           = "aufs"
 )
 
-var SupportedFileSystem = []string{AUFS}
+var SupportedFileSystem = []string{OVERLAY, AUFS}
 
 func SetMntInst(fsName string, mntFs MountFS) {
 	mntInst[fsName] = mntFs
