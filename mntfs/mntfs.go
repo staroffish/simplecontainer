@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"syscall"
 
 	"github.com/sirupsen/logrus"
@@ -21,9 +22,10 @@ type MountFS interface {
 var mntInst = make(map[string]MountFS)
 
 const (
-	fileSystemPath = "/proc/filesystems"
-	OVERLAY        = "overlay"
-	AUFS           = "aufs"
+	fileSystemPath    = "/proc/filesystems"
+	fileSystemModPath = "/lib/modules/%s/kernel/fs"
+	OVERLAY           = "overlay"
+	AUFS              = "aufs"
 )
 
 var SupportedFileSystem = []string{OVERLAY, AUFS}
@@ -76,6 +78,39 @@ func GetSupportedFs() string {
 	for _, fs := range SupportedFileSystem {
 		if bytes.Contains(data, []byte("\t"+fs)) {
 			return fs
+		}
+	}
+
+	uts := &syscall.Utsname{}
+	err = syscall.Uname(uts)
+	if err != nil {
+		logrus.Errorf("Get linux kernel version error %s:%v", fileSystemPath, err)
+		return ""
+	}
+
+	buf := bytes.Buffer{}
+	for _, char := range uts.Release {
+		if char == 0 {
+			break
+		}
+		buf.WriteByte(uint8(char))
+	}
+
+	modulePath := fmt.Sprintf(fileSystemModPath, buf.String())
+
+	dirs, err := ioutil.ReadDir(modulePath)
+	if err != nil {
+		logrus.Errorf("Read filesystem error %s:%v", fileSystemPath, err)
+		return ""
+	}
+
+	for _, dir := range dirs {
+		if dir.IsDir() {
+			for _, fs := range SupportedFileSystem {
+				if strings.Contains(dir.Name(), fs) {
+					return fs
+				}
+			}
 		}
 	}
 
