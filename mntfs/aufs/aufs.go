@@ -49,7 +49,7 @@ func (a *aufs) Mount(name, imageName string) error {
 	mntPath := fmt.Sprintf("%s/%s/", config.MntPath, name)
 	wirtelayPath := fmt.Sprintf("%s/%s", config.WirtelayPath, name)
 
-	// mount -t aufs none -o br=rdOnlyPath:wirtelayPath mntPath
+	// mount -t aufs none -o br=wirtelayPath:rdOnlyPath mntPath
 	optStr := fmt.Sprintf("br=%s:%s", wirtelayPath, rdOnlyPath)
 	err := syscall.Mount("none", mntPath, "aufs", 0, optStr)
 	if err != nil {

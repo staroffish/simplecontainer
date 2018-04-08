@@ -43,7 +43,7 @@ func Unmount(name string) error {
 
 	err := syscall.Unmount(mergePath, 0)
 	if err != nil {
-		logrus.Errorf("Unmount overlay file system error:%s:%v", mergePath, err)
+		logrus.Errorf("Unmount file system error:%s:%v", mergePath, err)
 		return err
 	}
 	return nil
@@ -104,9 +104,9 @@ func GetSupportedFs() string {
 		return ""
 	}
 
-	for _, dir := range dirs {
-		if dir.IsDir() {
-			for _, fs := range SupportedFileSystem {
+	for _, fs := range SupportedFileSystem {
+		for _, dir := range dirs {
+			if dir.IsDir() {
 				if strings.Contains(dir.Name(), fs) {
 					return fs
 				}
