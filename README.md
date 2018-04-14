@@ -40,7 +40,7 @@ perl $GOPATH/src/github.com/staroffish/simplecontainer/init.pl /root/container
 
 ```
 
-##### 执行上述脚本后，会再/etc下面创建一个sc.json的配置文件，<br>
+##### 执行上述脚本后，会在/etc下面创建一个sc.json的配置文件，<br>
 ##### 以及再指定的路径(这里是/root/container)下创建一系列目录
 
 ## 相关命令演示
